@@ -1,35 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-error Bank__NotEnoughFundsProvided();
-error Bank__NotEnoughEthersOnTheSC();
-error Bank__WithdrawFailed();
+import "@openzeppelin/contracts/access/Ownable.sol";
 
+contract Bank is Ownable {
 
-contract Bank {
+    event Deposit(address indexed _from, uint256 _value);
+    event Withdraw(address indexed _from, uint256 _value);
 
-    mapping(address => uint256) balances;
+    constructor() Ownable(msg.sender) {}
 
-    function sendEthers() external payable {
-        //require(msg.value >= 1, "Not enough ethers sent");
-        if(msg.value < 1 wei) {
-            revert Bank__NotEnoughFundsProvided();
-        }
-        balances[msg.sender] += msg.value;
+    function deposit() external payable onlyOwner {
+        require(msg.value >= 0.1 ether, "not enough funds provided");
+        emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 _amount) external {
-        if(_amount > balances[msg.sender]) {
-            revert Bank__NotEnoughEthersOnTheSC();
-        }
-        balances[msg.sender] -= _amount;
-        (bool received, ) = msg.sender.call{value: _amount}("");
-        if(!received) {
-            revert Bank__WithdrawFailed();
-        }
+    function withdraw(uint256 _amount) external onlyOwner {
+        require(_amount <= address(this).balance, "you cannot withdraw this amount");
+        (bool received,) = msg.sender.call{value: _amount}("");
+        require(received, "the withdraw did not work");
+        emit Withdraw(msg.sender, _amount);
     }
 
-    function getBalance(address _user) external view returns(uint256) {
-        return balances[_user];
-    }
 }
