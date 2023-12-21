@@ -7,13 +7,6 @@ import "forge-std/console.sol";
 import "src/Bank.sol";
 
 
-contract Reverter {
-    receive() external payable {
-        revert("ERROR");
-    }
-}
-
-
 contract BankTest is Test {
     address owner = makeAddr("user1");
     address rober = makeAddr("user2");
@@ -55,9 +48,9 @@ contract BankTest is Test {
     }
 
     function test_error_on_sender_call() public {
-        Reverter r = new Reverter();
-        address user = address(r);
-        vm.prank(user);
+        address user = address(this);
+        vm.stopPrank();
+        // by default create with test contract address
         Bank _bank = new Bank();
         uint ammount = 100 ether;
         console.logAddress(user);
