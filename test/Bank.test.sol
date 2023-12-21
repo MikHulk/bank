@@ -47,12 +47,19 @@ contract BankTest is Test {
         assertEq(owner.balance, ammount);
     }
 
-    function test_error_on_sender_call() public {
+    function test_error_on_sender_call(uint ammount) public {
         address user = address(this);
         vm.stopPrank();
         // by default create with test contract address
         Bank _bank = new Bank();
-        uint ammount = 100 ether;
+        if (ammount < 0.1 ether) {
+            vm.deal(user, ammount);
+            assertEq(user.balance, ammount);
+            vm.prank(user);
+            vm.expectRevert();
+            _bank.deposit{value: ammount}();
+            return;
+        }
         console.logAddress(user);
         vm.deal(user, ammount);
         assertEq(user.balance, ammount);
