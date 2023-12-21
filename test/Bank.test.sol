@@ -15,66 +15,59 @@ contract Reverter {
 
 
 contract BankTest is Test {
-    address user1 = makeAddr("user1");
-    address user2 = makeAddr("user2");
-    address user3 = makeAddr("user3");
-    address user4 = makeAddr("user4");
-    address user5 = makeAddr("user5");
-    address user6 = makeAddr("user6");
-    address user7 = makeAddr("user7");
+    address owner = makeAddr("user1");
+    address rober = makeAddr("user2");
     Bank bank;
     
     function setUp() public {
+        vm.prank(owner);
         bank = new Bank();
     }
 
     function test_deposit(uint ammount) public {
-        address user =
-            [user1, user2, user3, user4, user5, user6, user7][ammount % 7];
-        console.logAddress(user);
-        vm.deal(user, ammount);
-        assertEq(user.balance, ammount);
-        assertEq(bank.getBalance(user), 0);
-        if(ammount < 1) {
+        console.logAddress(owner);
+        vm.deal(owner, ammount);
+        assertEq(owner.balance, ammount);
+        if(ammount < 0.1 ether) {
             vm.expectRevert();
         }
-        vm.prank(user);
-        bank.sendEthers{value: ammount}();
+        vm.prank(owner);
+        bank.deposit{value: ammount}();
     }
 
     function test_withdraw(uint ammount) public {
-        address user =
-            [user1, user2, user3, user4, user5, user6, user7][ammount % 7];
-        if (ammount == 0 || ammount == 2 ^ 256 - 1) {
+        if (ammount < 0.1 ether) {
             vm.expectRevert();
-            vm.prank(user);
-            bank.sendEthers{value: ammount}();
+            vm.prank(owner);
+            bank.deposit{value: ammount}();
             return;
         }
-        console.logAddress(user);
-        vm.deal(user, ammount);
-        assertEq(user.balance, ammount);
-        vm.startPrank(user);
-        bank.sendEthers{value: ammount}();
-        assertEq(user.balance, 0);
+        console.logAddress(owner);
+        vm.deal(owner, ammount);
+        assertEq(owner.balance, ammount);
+        vm.startPrank(owner);
+        bank.deposit{value: ammount}();
+        assertEq(owner.balance, 0);
         vm.expectRevert();
         bank.withdraw(ammount + 1);
         bank.withdraw(ammount);
-        assertEq(user.balance, ammount);
+        assertEq(owner.balance, ammount);
     }
 
     function test_error_on_sender_call() public {
         Reverter r = new Reverter();
         address user = address(r);
+        vm.prank(user);
+        Bank _bank = new Bank();
         uint ammount = 100 ether;
         console.logAddress(user);
         vm.deal(user, ammount);
         assertEq(user.balance, ammount);
         vm.startPrank(user);
-        bank.sendEthers{value: ammount}();
+        _bank.deposit{value: ammount}();
         assertEq(user.balance, 0);
         vm.expectRevert();
-        bank.withdraw(ammount);
+        _bank.withdraw(ammount);
         
     }
 }
